@@ -7,7 +7,7 @@ Pod::Spec.new do |s|
   s.license      = "MIT"
   s.authors      = { 'Sunnyyoung' => 'https://github.com/Sunnyyoung' }
   s.platform     = :osx, "10.10"
-  s.source       = { :git => "https://github.com/wowthatisrandom/SYFlatButton.git",. :branch=>'supportEarliermacOS', :tag => s.version }
+  s.source       = { :git => "https://github.com/wowthatisrandom/SYFlatButton.git", :branch=>'supportEarliermacOS', :tag => s.version }
   s.source_files = "SYFlatButton/SYFlatButton/*.{h,m}"
   s.requires_arc = true
 
