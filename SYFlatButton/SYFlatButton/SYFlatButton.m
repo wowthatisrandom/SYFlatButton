@@ -75,12 +75,19 @@
     
     CGSize buttonSize = self.frame.size;
     CGSize imageSize = self.image.size;
-    CGSize titleSize = [self.title sizeWithAttributes:@{NSFontAttributeName: self.font}];
+    CGSize titleSize = self.attributedTitle.size;
     CGFloat x = 0.0; // Image's origin x
     CGFloat y = 0.0; // Image's origin y
     
     // Caculate the image's and title's position depends on button's imagePosition and imageHugsTitle property
-    switch (self.imagePosition) {
+
+    NSCellImagePosition effectiveImagePosition = [self effectiveImagePositionFrom:self.imagePosition];
+    BOOL effectiveImageHugsTitle = NO;
+    if (@available(macOS 10.12, *)) {
+        effectiveImageHugsTitle = self.imageHugsTitle;
+    }
+
+    switch (effectiveImagePosition) {
         case NSNoImage:
             return;
             break;
@@ -94,26 +101,24 @@
             y = (buttonSize.height - imageSize.height) / 2.0;
             break;
         }
-        case NSImageLeading:
         case NSImageLeft: {
-            x = self.imageHugsTitle ? ((buttonSize.width - imageSize.width - titleSize.width) / 2.0 - self.spacing) : self.spacing;
+            x = effectiveImageHugsTitle ? ((buttonSize.width - imageSize.width - titleSize.width) / 2.0 - self.spacing) : self.spacing;
             y = (buttonSize.height - imageSize.height) / 2.0;
             break;
         }
-        case NSImageTrailing:
         case NSImageRight: {
-            x = self.imageHugsTitle ? ((buttonSize.width - imageSize.width + titleSize.width) / 2.0 + self.spacing) : (buttonSize.width - imageSize.width - self.spacing);
+            x = effectiveImageHugsTitle ? ((buttonSize.width - imageSize.width + titleSize.width) / 2.0 + self.spacing) : (buttonSize.width - imageSize.width - self.spacing);
             y = (buttonSize.height - imageSize.height) / 2.0;
             break;
         }
         case NSImageAbove: {
             x = (buttonSize.width - imageSize.width) / 2.0;
-            y = self.imageHugsTitle ? ((buttonSize.height - imageSize.height - titleSize.height) / 2.0 - self.spacing) : self.spacing;
+            y = effectiveImageHugsTitle ? ((buttonSize.height - imageSize.height - titleSize.height) / 2.0 - self.spacing) : self.spacing;
             break;
         }
         case NSImageBelow: {
             x = (buttonSize.width - imageSize.width) / 2.0;
-            y = self.imageHugsTitle ? ((buttonSize.height - imageSize.height + titleSize.height) / 2.0 + self.spacing) : (buttonSize.height - imageSize.height - self.spacing);
+            y = effectiveImageHugsTitle ? ((buttonSize.height - imageSize.height + titleSize.height) / 2.0 + self.spacing) : (buttonSize.height - imageSize.height - self.spacing);
             break;
         }
         default: {
@@ -135,19 +140,26 @@
 
 - (void)setupTitleLayer {
     // Ignore title layer if has no title or imagePosition equal to NSImageOnly
-    if (!self.title || self.imagePosition == NSImageOnly) {
+    if ((!self.attributedTitle && !self.title) || self.imagePosition == NSImageOnly) {
         [self.titleLayer removeFromSuperlayer];
         return;
     }
     
     CGSize buttonSize = self.frame.size;
     CGSize imageSize = self.image.size;
-    CGSize titleSize = [self.title sizeWithAttributes:@{NSFontAttributeName: self.font}];
+    CGSize titleSize = self.attributedTitle ? self.attributedTitle.size : [self.title sizeWithAttributes:@{NSFontAttributeName: self.font}];;
     CGFloat x = 0.0; // Title's origin x
     CGFloat y = 0.0; // Title's origin y
     
     // Caculate the image's and title's position depends on button's imagePosition and imageHugsTitle property
-    switch (self.imagePosition) {
+    
+    NSCellImagePosition effectiveImagePosition = [self effectiveImagePositionFrom:self.imagePosition];
+    BOOL effectiveImageHugsTitle = NO;
+    if (@available(macOS 10.12, *)) {
+        effectiveImageHugsTitle = self.imageHugsTitle;
+    }
+    
+    switch (effectiveImagePosition) {
         case NSImageOnly: {
             return;
             break;
@@ -162,25 +174,23 @@
             y = (buttonSize.height - titleSize.height) / 2.0;
             break;
         }
-        case NSImageLeading:
         case NSImageLeft: {
-            x = self.imageHugsTitle ? ((buttonSize.width + imageSize.width - titleSize.width) / 2.0 + self.spacing) : (buttonSize.width - titleSize.width - self.spacing);
+            x = effectiveImageHugsTitle ? ((buttonSize.width + imageSize.width - titleSize.width) / 2.0 + self.spacing) : (buttonSize.width - titleSize.width - self.spacing);
             y = (buttonSize.height - titleSize.height) / 2.0;
             break;
         }
-        case NSImageTrailing:
         case NSImageRight: {
-            x = self.imageHugsTitle ? ((buttonSize.width - imageSize.width - titleSize.width) / 2.0 - self.spacing) : self.spacing;
+            x = effectiveImageHugsTitle ? ((buttonSize.width - imageSize.width - titleSize.width) / 2.0 - self.spacing) : self.spacing;
             y = (buttonSize.height - titleSize.height) / 2.0;
             break;
         }
         case NSImageAbove: {
             x = (buttonSize.width - titleSize.width) / 2.0;
-            y = self.imageHugsTitle ? ((buttonSize.height + imageSize.height - titleSize.height) / 2.0 + self.spacing) : (buttonSize.height - titleSize.height - self.spacing);
+            y = effectiveImageHugsTitle ? ((buttonSize.height + imageSize.height - titleSize.height) / 2.0 + self.spacing) : (buttonSize.height - titleSize.height - self.spacing);
             break;
         }
         case NSImageBelow: {
-            y = self.imageHugsTitle ? ((buttonSize.height - imageSize.height - titleSize.height) / 2.0 - self.spacing) : self.spacing;
+            y = effectiveImageHugsTitle ? ((buttonSize.height - imageSize.height - titleSize.height) / 2.0 - self.spacing) : self.spacing;
             x = (buttonSize.width - titleSize.width) / 2.0;
             break;
         }
@@ -188,12 +198,14 @@
             break;
         }
     }
-    
     // Setup title layer
     self.titleLayer.frame = NSMakeRect(round(x), round(y), ceil(titleSize.width), ceil(titleSize.height));
-    self.titleLayer.string = self.title;
-    self.titleLayer.font = (__bridge CFTypeRef _Nullable)(self.font);
-    self.titleLayer.fontSize = self.font.pointSize;
+    self.titleLayer.string = self.attributedTitle ? self.attributedTitle : self.title;
+    
+    if (self.title && !self.attributedTitle) {
+        self.titleLayer.font = (__bridge CFTypeRef _Nullable)(self.font);
+        self.titleLayer.fontSize = self.font.pointSize;
+    }
     [self.layer addSublayer:self.titleLayer];
 }
 
@@ -282,6 +294,11 @@
 
 - (void)setTitle:(NSString *)title {
     [super setTitle:title];
+    [self setupTitleLayer];
+}
+
+- (void)setAttributedTitle:(NSAttributedString *)attributedTitle {
+    [super setAttributedTitle:attributedTitle];
     [self setupTitleLayer];
 }
 
@@ -376,6 +393,28 @@
         _titleLayer.delegate = self;
     }
     return _titleLayer;
+}
+
+#pragma mark - Helper Methods
+
+- (NSCellImagePosition)effectiveImagePositionFrom:(NSCellImagePosition) originalImagePosition {
+    
+    NSCellImagePosition effectiveImagePosition = originalImagePosition;
+    
+    if (@available(macOS 10.12, *)) {
+        switch(originalImagePosition) {
+            case NSImageTrailing:
+                effectiveImagePosition = NSImageRight;
+                break;
+            case NSImageLeading:
+                effectiveImagePosition = NSImageLeft;
+                break;
+            default:
+                //no mapping needed
+                break;
+        }
+    }
+    return effectiveImagePosition;
 }
 
 @end
