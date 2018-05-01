@@ -75,7 +75,7 @@
     
     CGSize buttonSize = self.frame.size;
     CGSize imageSize = self.image.size;
-    CGSize titleSize = [self.title sizeWithAttributes:@{NSFontAttributeName: self.font}];
+    CGSize titleSize = self.attributedTitle.size;
     CGFloat x = 0.0; // Image's origin x
     CGFloat y = 0.0; // Image's origin y
     
@@ -140,14 +140,14 @@
 
 - (void)setupTitleLayer {
     // Ignore title layer if has no title or imagePosition equal to NSImageOnly
-    if (!self.title || self.imagePosition == NSImageOnly) {
+    if ((!self.attributedTitle && !self.title) || self.imagePosition == NSImageOnly) {
         [self.titleLayer removeFromSuperlayer];
         return;
     }
     
     CGSize buttonSize = self.frame.size;
     CGSize imageSize = self.image.size;
-    CGSize titleSize = [self.title sizeWithAttributes:@{NSFontAttributeName: self.font}];
+    CGSize titleSize = self.attributedTitle ? self.attributedTitle.size : [self.title sizeWithAttributes:@{NSFontAttributeName: self.font}];;
     CGFloat x = 0.0; // Title's origin x
     CGFloat y = 0.0; // Title's origin y
     
@@ -198,12 +198,14 @@
             break;
         }
     }
-    
     // Setup title layer
     self.titleLayer.frame = NSMakeRect(round(x), round(y), ceil(titleSize.width), ceil(titleSize.height));
-    self.titleLayer.string = self.title;
-    self.titleLayer.font = (__bridge CFTypeRef _Nullable)(self.font);
-    self.titleLayer.fontSize = self.font.pointSize;
+    self.titleLayer.string = self.attributedTitle ? self.attributedTitle : self.title;
+    
+    if (self.title && !self.attributedTitle) {
+        self.titleLayer.font = (__bridge CFTypeRef _Nullable)(self.font);
+        self.titleLayer.fontSize = self.font.pointSize;
+    }
     [self.layer addSublayer:self.titleLayer];
 }
 
@@ -292,6 +294,11 @@
 
 - (void)setTitle:(NSString *)title {
     [super setTitle:title];
+    [self setupTitleLayer];
+}
+
+- (void)setAttributedTitle:(NSAttributedString *)attributedTitle {
+    [super setAttributedTitle:attributedTitle];
     [self setupTitleLayer];
 }
 
