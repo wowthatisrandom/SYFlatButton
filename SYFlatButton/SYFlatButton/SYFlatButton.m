@@ -75,7 +75,7 @@
     
     CGSize buttonSize = self.frame.size;
     CGSize imageSize = self.image.size;
-    CGSize titleSize = self.attributedTitle.size;
+    CGSize titleSize = self.attributedTitle ? self.attributedTitle.size : [self.title sizeWithAttributes:@{NSFontAttributeName: self.font}];;
     CGFloat x = 0.0; // Image's origin x
     CGFloat y = 0.0; // Image's origin y
     
